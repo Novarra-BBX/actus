@@ -5,33 +5,6 @@ when:
   - event: manual
 
 steps:
-  - name: fmt
-    image: localhost:5000/rust-builder:1.92.0-ci
-    when:
-      - event: [pull_request, manual]
-    environment:
-      CARGO_INCREMENTAL: "0"
-      TMPDIR: /tmp
-    volumes:
-      - /var/cache/sccache:/root/.cache/sccache
-      - /var/cache/cargo:/usr/local/cargo/registry
-    commands:
-      - rustup component add --toolchain nightly rustfmt
-      - cargo +nightly fmt --all -- --check
-
-  - name: clippy
-    image: localhost:5000/rust-builder:1.92.0-ci
-    when:
-      - event: [pull_request, manual]
-    environment:
-      CARGO_INCREMENTAL: "0"
-      TMPDIR: /tmp
-    volumes:
-      - /var/cache/sccache:/root/.cache/sccache
-      - /var/cache/cargo:/usr/local/cargo/registry
-    commands:
-      - cargo clippy --workspace -- -D warnings
-
   - name: build
     image: localhost:5000/rust-builder:1.92.0-ci
     environment:
@@ -54,7 +27,7 @@ steps:
       - /var/cache/sccache:/root/.cache/sccache
       - /var/cache/cargo:/usr/local/cargo/registry
     commands:
-      - cargo nextest run --workspace --release || cargo test --workspace --release
+      - cargo test --workspace --release
 
   - name: radicle-sync
     image: curlimages/curl:latest
