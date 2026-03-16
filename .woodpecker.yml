@@ -1,0 +1,72 @@
+variables:
+  - &rust_image "registry.ac-dc.network/rust-builder:1.92.0-ci"
+
+steps:
+  setup:
+    image: *rust_image
+    commands:
+      - rustup show
+      - cargo --version
+    when:
+      - event: [pull_request, manual]
+
+  fmt:
+    image: *rust_image
+    commands:
+      - cargo fmt --check
+    when:
+      - event: [pull_request, manual]
+
+  clippy:
+    image: *rust_image
+    environment:
+      CARGO_INCREMENTAL: "0"
+    commands:
+      - cargo clippy -- -D warnings
+    when:
+      - event: [pull_request, manual]
+
+  check:
+    image: *rust_image
+    environment:
+      CARGO_INCREMENTAL: "0"
+    commands:
+      - cargo check
+    when:
+      - event: [pull_request, manual]
+
+  build:
+    image: *rust_image
+    environment:
+      CARGO_INCREMENTAL: "0"
+    commands:
+      - cargo build --release
+    when:
+      - event: [pull_request, manual]
+
+  test:
+    image: *rust_image
+    environment:
+      CARGO_INCREMENTAL: "0"
+    commands:
+      - cargo test
+    when:
+      - event: [pull_request, manual]
+
+  radicle-sync:
+    image: *rust_image
+    commands:
+      - curl -sfX POST http://source.ac-dc.network:8766/push/actus || true
+    when:
+      - event: push
+        branch: main
+
+  github-sync:
+    image: *rust_image
+    secrets: [github_token]
+    commands:
+      - git remote add github https://x-access-token:$GITHUB_TOKEN@github.com/Novarra-BBX/actus.git 2>/dev/null || true
+      - git push github main --force
+    when:
+      - event: push
+        branch: main
