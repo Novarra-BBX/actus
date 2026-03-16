@@ -1,72 +1,65 @@
-variables:
-  - &rust_image "registry.ac-dc.network/rust-builder:1.92.0-ci"
+when:
+  - event: push
+    branch: main
+  - event: pull_request
+  - event: manual
 
 steps:
-  setup:
-    image: *rust_image
-    commands:
-      - rustup show
-      - cargo --version
+  - name: fmt
+    image: localhost:5000/rust-builder:1.92.0-ci
     when:
       - event: [pull_request, manual]
-
-  fmt:
-    image: *rust_image
-    commands:
-      - cargo fmt --check
-    when:
-      - event: [pull_request, manual]
-
-  clippy:
-    image: *rust_image
     environment:
       CARGO_INCREMENTAL: "0"
+      TMPDIR: /tmp
+    volumes:
+      - /var/cache/sccache:/root/.cache/sccache
+      - /var/cache/cargo:/usr/local/cargo/registry
     commands:
-      - cargo clippy -- -D warnings
+      - rustup component add --toolchain nightly rustfmt
+      - cargo +nightly fmt --all -- --check
+
+  - name: clippy
+    image: localhost:5000/rust-builder:1.92.0-ci
     when:
       - event: [pull_request, manual]
-
-  check:
-    image: *rust_image
     environment:
       CARGO_INCREMENTAL: "0"
+      TMPDIR: /tmp
+    volumes:
+      - /var/cache/sccache:/root/.cache/sccache
+      - /var/cache/cargo:/usr/local/cargo/registry
     commands:
-      - cargo check
-    when:
-      - event: [pull_request, manual]
+      - cargo clippy --workspace -- -D warnings
 
-  build:
-    image: *rust_image
+  - name: build
+    image: localhost:5000/rust-builder:1.92.0-ci
     environment:
       CARGO_INCREMENTAL: "0"
+      TMPDIR: /tmp
+    volumes:
+      - /var/cache/sccache:/root/.cache/sccache
+      - /var/cache/cargo:/usr/local/cargo/registry
     commands:
       - cargo build --release
+
+  - name: test
+    image: localhost:5000/rust-builder:1.92.0-ci
     when:
       - event: [pull_request, manual]
-
-  test:
-    image: *rust_image
     environment:
       CARGO_INCREMENTAL: "0"
+      TMPDIR: /tmp
+    volumes:
+      - /var/cache/sccache:/root/.cache/sccache
+      - /var/cache/cargo:/usr/local/cargo/registry
     commands:
-      - cargo test
-    when:
-      - event: [pull_request, manual]
+      - cargo nextest run --workspace --release || cargo test --workspace --release
 
-  radicle-sync:
-    image: *rust_image
-    commands:
-      - curl -sfX POST http://source.ac-dc.network:8766/push/actus || true
+  - name: radicle-sync
+    image: curlimages/curl:latest
     when:
       - event: push
         branch: main
-
-  github-sync:
-    image: *rust_image
-    secrets: [github_token]
     commands:
-      - git remote add github https://x-access-token:$GITHUB_TOKEN@github.com/Novarra-BBX/actus.git 2>/dev/null || true
-      - git push github main --force
-    when:
-      - event: push
-        branch: main
+      - curl -sfX POST "http://source.ac-dc.network:8766/push/actus"
