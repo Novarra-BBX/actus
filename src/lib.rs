@@ -14,6 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with the actus library. If not, see <https://www.gnu.org/licenses/>.
 
-fn main() {
-    println!("actus");
-}
+//! ACTUS DEX Integration — S4.
+//!
+//! Tokenized ACTUS positions and DEX order book for Alpha-Delta protocol.
+
+pub mod order_book;
+pub mod tokenized;
+
+pub use order_book::OrderBook;
+pub use tokenized::{TokenizedPosition, TokenizedPositionRegistry};
