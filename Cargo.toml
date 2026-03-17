@@ -3,4 +3,12 @@ name = "actus"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "actus"
+path = "src/lib.rs"
+
+[[bin]]
+name = "actus"
+path = "src/main.rs"
+
 [dependencies]
